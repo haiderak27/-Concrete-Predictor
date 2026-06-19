@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Concrete Strength Lab | Engineering Analytics</title>
+    
+    <!-- Chart.js - with fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    
+    <style>
+        /* ============================================================
+           IMPORTS & ROOT - ENGINEERING COLOR PALETTE
+           ============================================================ */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --navy: #0B1F3A;
+            --steel: #415A77;
+            --concrete: #778DA9;
+            --cyan: #4CC9F0;
+            --teal: #2EC4B6;
+            --success: #2EC4B6;
+            --warning: #F9C74F;
+            --danger: #F94144;
+            
+            --bg-primary: #0B1F3A;
+            --bg-secondary: #0F2745;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --bg-input: rgba(255, 255, 255, 0.06);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            
+            --text-primary: #E8F0F8;
+            --text-secondary: #A0B8CC;
+            --text-muted: #6A8AA0;
+            
+            --shadow-glass: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 16px;
+            color: var(--text-primary);
+            background-image: 
+                linear-gradient(rgba(11, 31, 58, 0.95), rgba(11, 31, 58, 0.98)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23415A77' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1480px;
+            margin: 0 auto;
+            border-radius: 24px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: var(--shadow-glass);
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .app-header {
+            padding: 18px 32px;
+            background: linear-gradient(135deg, rgba(11, 31, 58, 0.9), rgba(15, 39, 69, 0.9));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .brand-text h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-text .tagline {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .header-status {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px 4px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .status-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ============================================================
+           DASHBOARD GRID
+           ============================================================ */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================================
+           SIDEBAR
+           ============================================================ */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 20px 24px 24px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        @media (max-width: 1100px) {
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                max-height: none;
+            }
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        /* ============================================================
+           COMPACT KPI ROW
+           ============================================================ */
+        .kpi-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .kpi-compact-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .kpi-compact-item .label {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .kpi-compact-item .value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 1px;
+        }
+
+        .kpi-compact-item .value .unit {
+            font-size: 0.55rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           SLIDER COMPACT - PRODUCTION READY
+           ============================================================ */
+        .slider-compact {
+            margin-bottom: 5px;
+            padding: 6px 10px 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: var(--transition);
+        }
+
+        .slider-compact:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(76, 201, 240, 0.15);
+        }
+
+        .slider-compact .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .slider-compact .slider-header label {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .slider-compact .slider-header label .icon {
+            font-size: 0.7rem;
+        }
+
+        .slider-compact .slider-header .value-display {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--cyan);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* SLIDER TRACK - FIXED */
+        .slider-track-wrap {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            background: transparent;
+            overflow: visible;
+            margin: 2px 0;
+            touch-action: none;
+        }
+
+        .slider-track-wrap .track-bg {
+            position: absolute;
+            top: 7px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .slider-track-wrap .slider-fill {
+            position: absolute;
+            top: 7px;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            border-radius: 4px;
+            transition: width 0.05s ease;
+            pointer-events: none;
+            z-index: 1;
+            width: 0%;
+            will-change: width;
+        }
+
+        .slider-compact input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 20px;
+            background: transparent;
+            outline: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            margin: 0;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        .slider-compact input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2.5px solid var(--cyan);
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(76, 201, 240, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            margin-top: -7px;
+        }
+
+        .slider-compact input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 2px 20px rgba(76, 201, 240, 0.5);
+        }
+
+        .slider-compact input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(0.95);
+        }
+
+        .slider-compact input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2.5px solid var(--cyan);
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(76, 201, 240, 0.35);
+        }
+
+        .slider-compact input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            border: none;
+        }
+
+        .slider-compact input[type="range"]::-moz-range-progress {
+            height: 4px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            border-radius: 4px;
+        }
+
+        @media (pointer: coarse) {
+            .slider-compact input[type="range"]::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+                margin-top: -9px;
+            }
+            .slider-compact input[type="range"]::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+            }
+            .slider-track-wrap {
+                height: 24px;
+            }
+        }
+
+        .slider-compact .range-limits {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.5rem;
+            color: var(--text-muted);
+            padding: 0 1px;
+            margin-top: 1px;
+        }
+
+        /* ============================================================
+           PREDICT BUTTON
+           ============================================================ */
+        .predict-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: var(--navy);
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 20px rgba(76, 201, 240, 0.25);
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(76, 201, 240, 0.35);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ============================================================
+           MAIN CONTENT
+           ============================================================ */
+        .main-content {
+            padding: 20px 28px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-hero {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            flex-wrap: wrap;
+        }
+
+        .result-gauge-large {
+            flex-shrink: 0;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: conic-gradient(var(--teal) 0deg, var(--teal) 0deg, rgba(255,255,255,0.03) 0deg);
+            padding: 8px;
+            transition: var(--transition);
+        }
+
+        .result-gauge-large .gauge-inner {
+            width: 184px;
+            height: 184px;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-gauge-large .gauge-inner .strength-number {
+            font-size: 3.6rem;
+            font-weight: 800;
+            color: var(--teal);
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+
+        .result-gauge-large .gauge-inner .strength-number .unit {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0;
+        }
+
+        .result-gauge-large .gauge-inner .strength-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .result-meta {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-meta .grade-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .result-meta .grade-display .grade-sub {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .result-meta .classification-badge {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .classification-badge.grade-low { background: rgba(249, 65, 68, 0.15); color: #F94144; border: 1px solid rgba(249, 65, 68, 0.15); }
+        .classification-badge.grade-medium { background: rgba(249, 199, 79, 0.15); color: #F9C74F; border: 1px solid rgba(249, 199, 79, 0.15); }
+        .classification-badge.grade-high { background: rgba(46, 196, 182, 0.15); color: #2EC4B6; border: 1px solid rgba(46, 196, 182, 0.15); }
+        .classification-badge.grade-very-high { background: rgba(76, 201, 240, 0.15); color: #4CC9F0; border: 1px solid rgba(76, 201, 240, 0.15); }
+        .classification-badge.grade-waiting { background: rgba(255,255,255,0.03); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.05); }
+
+        /* ============================================================
+           MIX SUMMARY
+           ============================================================ */
+        .mix-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 10px 0 12px;
+        }
+
+        @media (max-width: 700px) {
+            .mix-summary { grid-template-columns: 1fr 1fr; }
+        }
+
+        .mix-summary-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .mix-summary-item .label {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .mix-summary-item .value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 1px;
+        }
+
+        .mix-summary-item .value .unit {
+            font-size: 0.55rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           CHARTS
+           ============================================================ */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 12px;
+            flex: 1;
+        }
+
+        @media (max-width: 800px) {
+            .charts-row { grid-template-columns: 1fr; }
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 14px 16px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .chart-card .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .chart-card .chart-header h4 {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-card .chart-header .badge {
+            font-size: 0.5rem;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.03);
+            padding: 2px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 120px;
+            width: 100%;
+        }
+
+        .chart-fallback {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ============================================================
+           STATES
+           ============================================================ */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .error-box {
+            background: rgba(249, 65, 68, 0.06);
+            border-left: 3px solid var(--danger);
+            padding: 10px 14px;
+            border-radius: 6px;
+            text-align: left;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .error-box .error-title {
+            font-weight: 600;
+            color: var(--danger);
+            font-size: 0.7rem;
+        }
+
+        .error-box .error-message {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .hidden { display: none !important; }
+
+        .share-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .share-btn {
+            padding: 4px 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: 500;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .share-btn:hover {
+            border-color: rgba(76, 201, 240, 0.2);
+            color: var(--text-primary);
+            background: rgba(76, 201, 240, 0.05);
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 1100px) {
+            .result-hero { flex-direction: column; text-align: center; }
+            .result-meta { align-items: center; }
+            .result-gauge-large { width: 160px; height: 160px; }
+            .result-gauge-large .gauge-inner { width: 144px; height: 144px; }
+            .result-gauge-large .gauge-inner .strength-number { font-size: 2.6rem; }
+            .sidebar { max-height: none; }
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .app-header { padding: 12px 16px; flex-direction: column; align-items: stretch; }
+            .header-status { justify-content: flex-start; }
+            .dashboard-grid { min-height: auto; }
+            .sidebar { padding: 12px 14px; }
+            .main-content { padding: 12px 14px; }
+            .mix-summary { grid-template-columns: 1fr 1fr; gap: 4px; }
+            .mix-summary-item { padding: 6px 8px; }
+            .result-gauge-large { width: 140px; height: 140px; }
+            .result-gauge-large .gauge-inner { width: 124px; height: 124px; }
+            .result-gauge-large .gauge-inner .strength-number { font-size: 2.2rem; }
+            .charts-row { gap: 10px; }
+            .chart-wrapper { height: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- ============================================================
+        HEADER
+        ============================================================ -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="brand-icon">C</div>
+                <div class="brand-text">
+                    <h1>Concrete Strength Lab</h1>
+                    <div class="tagline">Engineering Analytics Platform</div>
+                </div>
+            </div>
+            <div class="header-status">
+                <span class="status-pill"><span class="dot"></span> Model Active</span>
+                <span class="status-pill">Random Forest v2.0</span>
+                <span class="status-pill">R² 0.881</span>
+            </div>
+        </header>
+
+        <!-- ============================================================
+        DASHBOARD GRID
+        ============================================================ -->
+        <div class="dashboard-grid">
+
+            <!-- ===== SIDEBAR ===== -->
+            <aside class="sidebar">
+                <div class="sidebar-title">Mix Design Parameters</div>
+
+                <!-- KPI Compact -->
+                <div class="kpi-compact">
+                    <div class="kpi-compact-item">
+                        <div class="label">Water/Cement</div>
+                        <div class="value" id="kpi-wc">0.50</div>
+                    </div>
+                    <div class="kpi-compact-item">
+                        <div class="label">Total Binder</div>
+                        <div class="value" id="kpi-binder">350 <span class="unit">kg/m³</span></div>
+                    </div>
+                    <div class="kpi-compact-item">
+                        <div class="label">Curing Age</div>
+                        <div class="value" id="kpi-age">28 <span class="unit">d</span></div>
+                    </div>
+                    <div class="kpi-compact-item">
+                        <div class="label">SP Content</div>
+                        <div class="value" id="kpi-sp">0 <span class="unit">kg/m³</span></div>
+                    </div>
+                </div>
+
+                <form id="prediction-form">
+
+                    <!-- Cement -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">🧱</span> Cement <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="cement-value">350</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="cement-fill" style="width:50%"></div>
+                            <input type="range" id="cement" min="100" max="600" value="350" step="1">
+                        </div>
+                        <div class="range-limits"><span>100</span><span>600</span></div>
+                    </div>
+
+                    <!-- GGBFS -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">⚙</span> GGBFS <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="ggbfs-value">0</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="ggbfs-fill" style="width:0%"></div>
+                            <input type="range" id="ggbfs" min="0" max="450" value="0" step="1">
+                        </div>
+                        <div class="range-limits"><span>0</span><span>450</span></div>
+                    </div>
+
+                    <!-- Fly Ash -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">🌫</span> Fly Ash <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="flyash-value">0</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="flyash-fill" style="width:0%"></div>
+                            <input type="range" id="flyash" min="0" max="600" value="0" step="1">
+                        </div>
+                        <div class="range-limits"><span>0</span><span>600</span></div>
+                    </div>
+
+                    <!-- Water -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">💧</span> Water <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="water-value">175</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="water-fill" style="width:50%"></div>
+                            <input type="range" id="water" min="100" max="250" value="175" step="1">
+                        </div>
+                        <div class="range-limits"><span>100</span><span>250</span></div>
+                    </div>
+
+                    <!-- Superplasticizer -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">🧪</span> SP <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="sp-value">0</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="sp-fill" style="width:0%"></div>
+                            <input type="range" id="sp" min="0" max="30" value="0" step="0.5">
+                        </div>
+                        <div class="range-limits"><span>0</span><span>30</span></div>
+                    </div>
+
+                    <!-- Coarse Aggregate -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">🪨</span> Coarse Agg. <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="coarse-value">1100</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="coarse-fill" style="width:55%"></div>
+                            <input type="range" id="coarse" min="600" max="1500" value="1100" step="1">
+                        </div>
+                        <div class="range-limits"><span>600</span><span>1500</span></div>
+                    </div>
+
+                    <!-- Fine Aggregate -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">⛱</span> Fine Agg. <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">kg/m³</span></label>
+                            <span class="value-display" id="fine-value">700</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="fine-fill" style="width:28%"></div>
+                            <input type="range" id="fine" min="500" max="1200" value="700" step="1">
+                        </div>
+                        <div class="range-limits"><span>500</span><span>1200</span></div>
+                    </div>
+
+                    <!-- Age -->
+                    <div class="slider-compact">
+                        <div class="slider-header">
+                            <label><span class="icon">📅</span> Age <span style="font-weight:400;color:var(--text-muted);font-size:0.55rem;">days</span></label>
+                            <span class="value-display" id="age-value">28</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <div class="track-bg"></div>
+                            <div class="slider-fill" id="age-fill" style="width:7.4%"></div>
+                            <input type="range" id="age" min="1" max="365" value="28" step="1">
+                        </div>
+                        <div class="range-limits"><span>1</span><span>365</span></div>
+                    </div>
+
+                    <button type="submit" class="predict-btn" id="predict-btn">▶ Predict Strength</button>
+                </form>
+            </aside>
+
+            <!-- ===== MAIN CONTENT ===== -->
+            <main class="main-content" id="result-content">
+
+                <!-- Default State -->
+                <div id="default-state">
+                    <div class="result-hero">
+                        <div class="result-gauge-large" id="strength-gauge">
+                            <div class="gauge-inner">
+                                <div class="strength-number">-- <span class="unit">MPa</span></div>
+                                <div class="strength-label">Compressive Strength</div>
+                            </div>
+                        </div>
+                        <div class="result-meta">
+                            <div class="grade-display">Awaiting <span class="grade-sub">input</span></div>
+                            <span class="classification-badge grade-waiting">Ready</span>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Adjust mix parameters and predict</div>
+                        </div>
+                    </div>
+                    <div class="mix-summary">
+                        <div class="mix-summary-item"><div class="label">Water/Cement</div><div class="value" id="wc-display-default">0.50</div></div>
+                        <div class="mix-summary-item"><div class="label">Total Binder</div><div class="value">350 <span class="unit">kg/m³</span></div></div>
+                        <div class="mix-summary-item"><div class="label">Curing Age</div><div class="value">28 <span class="unit">days</span></div></div>
+                        <div class="mix-summary-item"><div class="label">Mix Class</div><div class="value" style="font-size:0.75rem;color:var(--text-muted);">—</div></div>
+                    </div>
+                    <div class="charts-row">
+                        <div class="chart-card">
+                            <div class="chart-header"><h4>Strength Evolution</h4><span class="badge">Interactive</span></div>
+                            <div class="chart-wrapper"><canvas id="strengthChart"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header"><h4>Material Composition</h4><span class="badge">Live</span></div>
+                            <div class="chart-wrapper"><canvas id="compositionChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="hidden">
+                    <div class="loading-container" style="padding:40px;">
+                        <div class="loading-spinner"></div>
+                        <span class="loading-text">Analyzing mix design...</span>
+                    </div>
+                </div>
+
+                <!-- Result State -->
+                <div id="result-state" class="hidden">
+                    <div class="result-hero">
+                        <div class="result-gauge-large" id="result-gauge">
+                            <div class="gauge-inner">
+                                <div class="strength-number" id="strength-value">-- <span class="unit">MPa</span></div>
+                                <div class="strength-label">Compressive Strength</div>
+                            </div>
+                        </div>
+                        <div class="result-meta">
+                            <div class="grade-display" id="grade-display">M40 <span class="grade-sub">Grade</span></div>
+                            <span class="classification-badge" id="grade-badge">High Strength</span>
+                            <div class="share-row">
+                                <button class="share-btn" onclick="window.copyResult()">📋 Copy</button>
+                                <button class="share-btn" onclick="window.exportResult()">📊 Export</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mix-summary">
+                        <div class="mix-summary-item"><div class="label">Water/Cement</div><div class="value" id="result-wc">0.00</div></div>
+                        <div class="mix-summary-item"><div class="label">Total Binder</div><div class="value" id="result-binder">0 <span class="unit">kg/m³</span></div></div>
+                        <div class="mix-summary-item"><div class="label">Curing Age</div><div class="value" id="result-age">0 <span class="unit">days</span></div></div>
+                        <div class="mix-summary-item"><div class="label">Model R²</div><div class="value">0.881</div></div>
+                    </div>
+                    <div class="charts-row">
+                        <div class="chart-card">
+                            <div class="chart-header"><h4>Strength Evolution</h4><span class="badge">Interactive</span></div>
+                            <div class="chart-wrapper"><canvas id="strengthChart"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header"><h4>Material Composition</h4><span class="badge">Live</span></div>
+                            <div class="chart-wrapper"><canvas id="compositionChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="hidden">
+                    <div style="padding:30px; text-align:center;">
+                        <div style="font-size:1.4rem; font-weight:700; color:var(--danger); margin-bottom:8px;">Error</div>
+                        <div class="error-box">
+                            <div class="error-title" id="error-title">Error Type</div>
+                            <div class="error-message" id="error-message">Detailed error description will appear here.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT - PRODUCTION READY
+    ============================================================ -->
+    <script>
+        /**
+         * ============================================================
+         * CONCRETE STRENGTH LAB - PRODUCTION FRONTEND
+         * Version: 2.0
+         * 
+         * Architecture:
+         * - Robust DOM ready checking
+         * - Chart.js error resilience
+         * - Debounced updates for performance
+         * - Comprehensive error handling
+         * - Mobile touch support
+         * ============================================================
+         */
+
+        (function() {
+            'use strict';
+
+            // ============================================================
+            // 1. CONFIGURATION
+            // ============================================================
+            const CONFIG = {
+                API_URL: 'http://127.0.0.1:5000/predict',
+                SLIDER_DEBOUNCE_MS: 16, // ~60fps
+                CHART_UPDATE_DEBOUNCE_MS: 50,
+                MAX_STRENGTH: 80,
+                GRADE_THRESHOLDS: [
+                    { min: 60, label: 'Very High Strength', cls: 'grade-very-high', grade: 'M60+' },
+                    { min: 50, label: 'High Strength', cls: 'grade-high', grade: 'M50' },
+                    { min: 40, label: 'High Strength', cls: 'grade-high', grade: 'M40' },
+                    { min: 30, label: 'Medium Strength', cls: 'grade-medium', grade: 'M30' },
+                    { min: 20, label: 'Medium Strength', cls: 'grade-medium', grade: 'M25' },
+                    { min: 0, label: 'Low Strength', cls: 'grade-low', grade: 'M20' }
+                ]
+            };
+
+            // ============================================================
+            // 2. SLIDER CONFIGURATION
+            // ============================================================
+            const SLIDER_CONFIGS = [
+                { id: 'cement', min: 100, max: 600, displayId: 'cement-value', fillId: 'cement-fill' },
+                { id: 'ggbfs', min: 0, max: 450, displayId: 'ggbfs-value', fillId: 'ggbfs-fill' },
+                { id: 'flyash', min: 0, max: 600, displayId: 'flyash-value', fillId: 'flyash-fill' },
+                { id: 'water', min: 100, max: 250, displayId: 'water-value', fillId: 'water-fill' },
+                { id: 'sp', min: 0, max: 30, displayId: 'sp-value', fillId: 'sp-fill' },
+                { id: 'coarse', min: 600, max: 1500, displayId: 'coarse-value', fillId: 'coarse-fill' },
+                { id: 'fine', min: 500, max: 1200, displayId: 'fine-value', fillId: 'fine-fill' },
+                { id: 'age', min: 1, max: 365, displayId: 'age-value', fillId: 'age-fill' }
+            ];
+
+            // ============================================================
+            // 3. STATE
+            // ============================================================
+            let isInitialized = false;
+            let chartUpdatePending = false;
+            let compositionChart = null;
+            let strengthChart = null;
+
+            // ============================================================
+            // 4. DOM UTILITY FUNCTIONS
+            // ============================================================
+            function getEl(id) {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`Element not found: #${id}`);
+                }
+                return el;
+            }
+
+            function setText(id, text) {
+                const el = getEl(id);
+                if (el) el.textContent = text;
+            }
+
+            function setHTML(id, html) {
+                const el = getEl(id);
+                if (el) el.innerHTML = html;
+            }
+
+            function getSliderValue(id, defaultValue) {
+                const el = getEl(id);
+                if (el && el.value !== undefined) {
+                    return parseFloat(el.value) || defaultValue;
+                }
+                return defaultValue;
+            }
+
+            // ============================================================
+            // 5. GRADE CLASSIFICATION
+            // ============================================================
+            function getGradeInfo(strength) {
+                for (const threshold of CONFIG.GRADE_THRESHOLDS) {
+                    if (strength >= threshold.min) {
+                        return threshold;
+                    }
+                }
+                return CONFIG.GRADE_THRESHOLDS[CONFIG.GRADE_THRESHOLDS.length - 1];
+            }
+
+            // ============================================================
+            // 6. GAUGE UPDATE
+            // ============================================================
+            function updateGauge(strength) {
+                const gauge = getEl('result-gauge') || getEl('strength-gauge');
+                if (!gauge) return;
+
+                const maxStrength = CONFIG.MAX_STRENGTH;
+                const percent = Math.min((strength / maxStrength) * 100, 100);
+                const angle = (percent / 100) * 360;
+
+                gauge.style.background = `conic-gradient(
+                    #2EC4B6 0deg,
+                    #2EC4B6 ${angle}deg,
+                    rgba(255,255,255,0.03) ${angle}deg
+                )`;
+            }
+
+            // ============================================================
+            // 7. KPI UPDATES
+            // ============================================================
+            function updateKPIs() {
+                try {
+                    const cement = getSliderValue('cement', 350);
+                    const water = getSliderValue('water', 175);
+                    const ggbfs = getSliderValue('ggbfs', 0);
+                    const flyash = getSliderValue('flyash', 0);
+                    const sp = getSliderValue('sp', 0);
+                    const age = getSliderValue('age', 28);
+
+                    const wc = (water / cement).toFixed(3);
+                    const binder = (cement + ggbfs + flyash).toFixed(0);
+
+                    setText('kpi-wc', wc);
+                    setHTML('kpi-binder', `${binder} <span class="unit">kg/m³</span>`);
+                    setHTML('kpi-age', `${age} <span class="unit">d</span>`);
+                    setHTML('kpi-sp', `${sp} <span class="unit">kg/m³</span>`);
+                    setText('wc-display-default', wc);
+                } catch (e) {
+                    console.warn('KPI update error:', e);
+                }
+            }
+
+            // ============================================================
+            // 8. CHART UPDATES
+            // ============================================================
+            function updateCompositionChart() {
+                try {
+                    if (!compositionChart) return;
+
+                    const cement = getSliderValue('cement', 0);
+                    const ggbfs = getSliderValue('ggbfs', 0);
+                    const flyash = getSliderValue('flyash', 0);
+                    const water = getSliderValue('water', 0);
+                    const sp = getSliderValue('sp', 0);
+
+                    compositionChart.data.datasets[0].data = [cement, ggbfs, flyash, water, sp];
+                    compositionChart.update('none');
+                } catch (e) {
+                    // Silent fail - chart update is non-critical
+                }
+            }
+
+            function updateStrengthChartPrediction(strength) {
+                try {
+                    if (!strengthChart || !strength || isNaN(strength)) return;
+
+                    const age = getSliderValue('age', 28);
+                    const labels = strengthChart.data.labels;
+                    let targetIndex = labels.length - 1;
+
+                    for (let i = 0; i < labels.length; i++) {
+                        const labelAge = parseInt(labels[i]);
+                        if (labelAge >= age) {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+
+                    // Update prediction dataset
+                    const predData = strengthChart.data.datasets[1]?.data;
+                    if (predData) {
+                        for (let i = 0; i < predData.length; i++) {
+                            predData[i] = null;
+                        }
+                        predData[targetIndex] = strength;
+                        strengthChart.update('none');
+                    }
+                } catch (e) {
+                    // Silent fail
+                }
+            }
+
+            // ============================================================
+            // 9. DEBOUNCED UPDATES
+            // ============================================================
+            let kpiUpdateTimeout = null;
+
+            function scheduleUpdates() {
+                if (kpiUpdateTimeout) {
+                    cancelAnimationFrame(kpiUpdateTimeout);
+                }
+                kpiUpdateTimeout = requestAnimationFrame(() => {
+                    kpiUpdateTimeout = null;
+                    updateKPIs();
+                    updateCompositionChart();
+                });
+            }
+
+            // ============================================================
+            // 10. SLIDER INITIALIZATION
+            // ============================================================
+            function initSliders() {
+                console.log('🚀 Initializing sliders...');
+
+                let successCount = 0;
+                let failCount = 0;
+
+                SLIDER_CONFIGS.forEach(({ id, min, max, displayId, fillId }) => {
+                    try {
+                        const slider = getEl(id);
+                        const display = getEl(displayId);
+                        const fill = getEl(fillId);
+
+                        if (!slider || !display || !fill) {
+                            console.warn(`⚠️ Slider "${id}" missing elements`);
+                            failCount++;
+                            return;
+                        }
+
+                        // Remove existing listener to prevent duplicates
+                        if (slider._updateHandler) {
+                            slider.removeEventListener('input', slider._updateHandler);
+                        }
+
+                        // Create update handler
+                        const updateHandler = function() {
+                            try {
+                                const val = parseFloat(this.value);
+                                const percent = ((val - min) / (max - min)) * 100;
+                                display.textContent = val;
+                                fill.style.width = Math.min(Math.max(percent, 0), 100) + '%';
+                                scheduleUpdates();
+                            } catch (e) {
+                                console.warn(`Slider "${id}" update error:`, e);
+                            }
+                        };
+
+                        // Store reference for cleanup
+                        slider._updateHandler = updateHandler;
+                        slider.addEventListener('input', updateHandler);
+
+                        // Initial update
+                        updateHandler.call(slider);
+
+                        successCount++;
+                        console.log(`✅ Slider "${id}" initialized`);
+                    } catch (e) {
+                        console.error(`❌ Slider "${id}" setup failed:`, e);
+                        failCount++;
+                    }
+                });
+
+                console.log(`📊 Slider init: ${successCount} success, ${failCount} failed`);
+                return successCount > 0;
+            }
+
+            // ============================================================
+            // 11. CHART INITIALIZATION - WITH ERROR RESILIENCE
+            // ============================================================
+            function initCharts() {
+                try {
+                    // Check Chart.js availability
+                    if (typeof Chart === 'undefined') {
+                        console.warn('⚠️ Chart.js not loaded - charts disabled');
+                        document.querySelectorAll('.chart-wrapper').forEach(el => {
+                            el.innerHTML = `
+                                <div class="chart-fallback">
+                                    📊 Charts unavailable<br>
+                                    <span style="font-size:0.6rem;">Check internet connection</span>
+                                </div>
+                            `;
+                        });
+                        return;
+                    }
+
+                    // Composition Chart
+                    const compCanvas = getEl('compositionChart');
+                    if (compCanvas) {
+                        compositionChart = new Chart(compCanvas.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Cement', 'GGBFS', 'Fly Ash', 'Water', 'SP'],
+                                datasets: [{
+                                    data: [350, 0, 0, 175, 0],
+                                    backgroundColor: ['#4CC9F0', '#415A77', '#778DA9', '#F9C74F', '#F94144'],
+                                    borderColor: 'rgba(11, 31, 58, 0.8)',
+                                    borderWidth: 2,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '55%',
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            color: '#6A8AA0',
+                                            font: { size: 7, weight: '400' },
+                                            padding: 4,
+                                            boxWidth: 8,
+                                            usePointStyle: true,
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        console.log('✅ Composition chart initialized');
+                    }
+
+                    // Strength Chart
+                    const strCanvas = getEl('strengthChart');
+                    if (strCanvas) {
+                        const ages = [];
+                        const strengths = [];
+                        for (let i = 0; i < 40; i++) {
+                            const age = Math.round(Math.exp(Math.log(365) * (i / 39)));
+                            const baseStrength = 40;
+                            const strength = baseStrength * Math.pow(age / 28, 0.3);
+                            ages.push(age);
+                            strengths.push(Math.min(strength, 80));
+                        }
+
+                        strengthChart = new Chart(strCanvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: ages.map(a => a + 'd'),
+                                datasets: [{
+                                    label: 'Strength Curve',
+                                    data: strengths,
+                                    borderColor: '#4CC9F0',
+                                    backgroundColor: 'rgba(76, 201, 240, 0.05)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    borderWidth: 2,
+                                    pointRadius: 0,
+                                }, {
+                                    label: 'Prediction',
+                                    data: new Array(ages.length).fill(null),
+                                    borderColor: '#F9C74F',
+                                    backgroundColor: '#F9C74F',
+                                    borderWidth: 3,
+                                    pointRadius: 8,
+                                    pointHoverRadius: 12,
+                                    showLine: false,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: '#6A8AA0',
+                                            font: { size: 7, weight: '400' },
+                                            boxWidth: 10,
+                                            padding: 8,
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { color: 'rgba(255,255,255,0.03)' },
+                                        ticks: { color: '#6A8AA0', font: { size: 6 }, maxTicksLimit: 8 }
+                                    },
+                                    y: {
+                                        grid: { color: 'rgba(255,255,255,0.03)' },
+                                        ticks: { color: '#6A8AA0', font: { size: 6 }, callback: v => v + 'MPa' }
+                                    }
+                                }
+                            }
+                        });
+                        console.log('✅ Strength chart initialized');
+                    }
+
+                } catch (e) {
+                    console.warn('⚠️ Chart initialization failed:', e.message);
+                    document.querySelectorAll('.chart-wrapper').forEach(el => {
+                        if (!el.querySelector('.chart-fallback')) {
+                            el.innerHTML = `
+                                <div class="chart-fallback">
+                                    📊 Charts unavailable<br>
+                                    <span style="font-size:0.6rem;">${e.message || 'Error loading charts'}</span>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            }
+
+            // ============================================================
+            // 12. STATE MANAGEMENT
+            // ============================================================
+            function showState(state) {
+                const states = ['default-state', 'loading-state', 'result-state', 'error-state'];
+                states.forEach(id => {
+                    const el = getEl(id);
+                    if (el) {
+                        if (id === state) {
+                            el.classList.remove('hidden');
+                        } else {
+                            el.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
+            function getInputValues() {
+                const values = {};
+                SLIDER_CONFIGS.forEach(({ id }) => {
+                    values[id] = getSliderValue(id, 0);
+                });
+                return values;
+            }
+
+            // ============================================================
+            // 13. SHARE FUNCTIONS
+            // ============================================================
+            window.copyResult = function() {
+                try {
+                    const strength = getEl('strength-value')?.textContent?.trim() || 'N/A';
+                    const wc = getEl('result-wc')?.textContent || 'N/A';
+                    const text = `Concrete Strength Prediction\nStrength: ${strength}\nWater/Cement: ${wc}\nModel: Random Forest v2.0\nR²: 0.881`;
+
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text)
+                            .then(() => alert('✅ Copied to clipboard!'))
+                            .catch(() => fallbackCopy(text));
+                    } else {
+                        fallbackCopy(text);
+                    }
+                } catch (e) {
+                    console.warn('Copy failed:', e);
+                    alert('Could not copy. Please select and copy manually.');
+                }
+            };
+
+            function fallbackCopy(text) {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    alert('✅ Copied to clipboard!');
+                } catch (e) {
+                    alert('Could not copy. Please select and copy manually.');
+                }
+            }
+
+            window.exportResult = function() {
+                try {
+                    const input = getInputValues();
+                    const strength = getEl('strength-value')?.textContent?.trim() || 'N/A';
+                    const data = {
+                        timestamp: new Date().toISOString(),
+                        inputs: input,
+                        prediction: strength,
+                        model: 'Random Forest v2.0',
+                        r2_score: 0.881,
+                        mae: 3.79
+                    };
+
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `concrete_prediction_${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    console.warn('Export failed:', e);
+                    alert('Could not export data.');
+                }
+            };
+
+            // ============================================================
+            // 14. API CALL
+            // ============================================================
+            const form = getEl('prediction-form');
+            const predictBtn = getEl('predict-btn');
+
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    showState('loading-state');
+                    if (predictBtn) {
+                        predictBtn.disabled = true;
+                        predictBtn.textContent = '⏳ Processing...';
+                    }
+
+                    const inputData = getInputValues();
+                    const apiData = {
+                        cement: inputData.cement || 0,
+                        blast_furnace_slag: inputData.ggbfs || 0,
+                        fly_ash: inputData.flyash || 0,
+                        water: inputData.water || 0,
+                        superplasticizer: inputData.sp || 0,
+                        coarse_aggregate: inputData.coarse || 0,
+                        fine_aggregate: inputData.fine || 0,
+                        age: inputData.age || 0
+                    };
+
+                    try {
+                        const response = await fetch(CONFIG.API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(apiData)
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.status === 'success') {
+                            showState('result-state');
+
+                            const strength = data.strength;
+                            const wc = data.w_c_ratio || (inputData.water / inputData.cement);
+                            const binder = inputData.cement + inputData.ggbfs + inputData.flyash;
+
+                            const strengthEl = getEl('strength-value');
+                            if (strengthEl) {
+                                strengthEl.innerHTML = `${strength.toFixed(1)} <span class="unit">MPa</span>`;
+                            }
+
+                            const gradeInfo = getGradeInfo(strength);
+                            const gradeDisplayEl = getEl('grade-display');
+                            if (gradeDisplayEl) {
+                                gradeDisplayEl.innerHTML = `${gradeInfo.grade} <span class="grade-sub">Grade</span>`;
+                            }
+
+                            const gradeBadgeEl = getEl('grade-badge');
+                            if (gradeBadgeEl) {
+                                gradeBadgeEl.textContent = gradeInfo.label;
+                                gradeBadgeEl.className = 'classification-badge ' + gradeInfo.cls;
+                            }
+
+                            setText('result-wc', wc.toFixed(3));
+                            setHTML('result-binder', `${binder.toFixed(0)} <span class="unit">kg/m³</span>`);
+                            setHTML('result-age', `${inputData.age} <span class="unit">days</span>`);
+
+                            updateGauge(strength);
+                            updateStrengthChartPrediction(strength);
+
+                        } else {
+                            showState('error-state');
+                            const errorTitleEl = getEl('error-title');
+                            const errorMessageEl = getEl('error-message');
+                            if (errorTitleEl) {
+                                errorTitleEl.textContent = data.status === 'error' ? 'Validation Error' : 'Server Error';
+                            }
+                            if (errorMessageEl) {
+                                errorMessageEl.textContent = data.error || 'An unknown error occurred.';
+                            }
+                        }
+
+                    } catch (error) {
+                        showState('error-state');
+                        const errorTitleEl = getEl('error-title');
+                        const errorMessageEl = getEl('error-message');
+                        if (errorTitleEl) errorTitleEl.textContent = 'Connection Error';
+                        if (errorMessageEl) {
+                            errorMessageEl.textContent =
+                                `Cannot connect to ${CONFIG.API_URL}.\n\nPlease ensure:\n1. Server is running (python app.py)\n2. No firewall blocking\n\nDetails: ${error.message}`;
+                        }
+                    }
+
+                    if (predictBtn) {
+                        predictBtn.disabled = false;
+                        predictBtn.textContent = '▶ Predict Strength';
+                    }
+                });
+            }
+
+            // ============================================================
+            // 15. MAIN INITIALIZATION
+            // ============================================================
+            function initializeApp() {
+                console.log('📌 Concrete Strength Lab - Starting...');
+
+                // Initialize sliders
+                const sliderSuccess = initSliders();
+
+                // Initialize charts
+                initCharts();
+
+                // Initial KPI update
+                updateKPIs();
+
+                isInitialized = true;
+                console.log('✅ Concrete Strength Lab initialized');
+                console.log('📡 API Endpoint:', CONFIG.API_URL);
+
+                if (!sliderSuccess) {
+                    console.warn('⚠️ Some sliders failed to initialize. Check console for details.');
+                }
+            }
+
+            // ============================================================
+            // 16. DOM READY CHECK - ROBUST
+            // ============================================================
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApp);
+            } else {
+                // DOM already ready, initialize immediately
+                initializeApp();
+            }
+
+            // Fallback: if DOMContentLoaded already fired but we're somehow late
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                if (!isInitialized) {
+                    console.warn('⚠️ DOM already loaded, initializing from fallback...');
+                    initializeApp();
+                }
+            }
+
+            // ============================================================
+            // 17. RESIZE HANDLER
+            // ============================================================
+            let resizeTimeout = null;
+            window.addEventListener('resize', function() {
+                if (resizeTimeout) {
+                    cancelAnimationFrame(resizeTimeout);
+                }
+                resizeTimeout = requestAnimationFrame(function() {
+                    resizeTimeout = null;
+                    try {
+                        if (strengthChart) strengthChart.resize();
+                        if (compositionChart) compositionChart.resize();
+                    } catch (e) {
+                        // Ignore resize errors
+                    }
+                });
+            });
+
+            // ============================================================
+            // 18. SERVICE WORKER / OFFLINE NOTIFICATION
+            // ============================================================
+            window.addEventListener('online', function() {
+                console.log('🟢 Network online');
+            });
+
+            window.addEventListener('offline', function() {
+                console.warn('🔴 Network offline - predictions may fail');
+            });
+
+            console.log('🟢 Concrete Strength Lab ready for interaction!');
+
+        })();
+    </script>
+
+</body>
+</html>
