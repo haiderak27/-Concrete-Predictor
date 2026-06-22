@@ -18,9 +18,8 @@ st.markdown("### Research Tool for Mix Design Optimization")
 # Load model
 @st.cache_resource
 def load_model():
-    model_path = 'models/concrete_strength_model.pkl'
-    scaler_path = 'models/concrete_scaler.pkl'
-    
+    model_path = 'concrete_predictor/models/concrete_strength_model.pkl'
+    scaler_path = 'concrete_predictor/models/concrete_scaler.pkl'
     if not os.path.exists(model_path):
         st.error("Model not found! Please ensure models are in the correct path.")
         return None, None
