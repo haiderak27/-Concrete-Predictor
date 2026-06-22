@@ -1,161 +1,87 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import joblib
-import numpy as np
+# app.py - STREAMLIT VERSION ONLY
+import streamlit as st
 import pandas as pd
-from datetime import datetime
+import numpy as np
+import joblib
 import os
 
-print("=" * 60)
-print("🌐 CONCRETE STRENGTH API")
-print("=" * 60)
+# Page config
+st.set_page_config(
+    page_title="Concrete Strength Predictor",
+    page_icon="🏗️",
+    layout="wide"
+)
 
-# Create Flask app
-app = Flask(__name__)
-CORS(app)  # Allow frontend to talk to API
+st.title("🏗️ Concrete Compressive Strength Predictor")
+st.markdown("### Research Tool for Mix Design Optimization")
 
-# Load the trained model and scaler
-print("\n📂 Loading model artifacts...")
+# Load model
+@st.cache_resource
+def load_model():
+    model_path = 'models/concrete_strength_model.pkl'
+    scaler_path = 'models/concrete_scaler.pkl'
+    
+    if not os.path.exists(model_path):
+        st.error("Model not found! Please ensure models are in the correct path.")
+        return None, None
+    
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    return model, scaler
 
-try:
-    model = joblib.load('../models/concrete_strength_model.pkl')
-    scaler = joblib.load('../models/concrete_scaler.pkl')
-    metadata = joblib.load('../models/model_metadata.pkl')
-    print("   ✅ Model loaded successfully!")
-    print(f"   R² Score: {metadata['r2_score']:.4f}")
-    print(f"   MAE: {metadata['mae']:.2f} MPa")
-except FileNotFoundError as e:
-    print(f"   ❌ ERROR: {e}")
-    print("   Please run train_model.py first!")
-    exit(1)
+model, scaler = load_model()
 
-# Feature columns (must match training)
-FEATURE_COLS = [
-    'cement', 'blast_furnace_slag', 'fly_ash', 'water', 
-    'superplasticizer', 'coarse_aggregate', 'fine_aggregate', 'age'
-]
+if model is None:
+    st.stop()
 
-# Validation rules
-VALIDATION_RULES = {
-    'cement': {'min': 100, 'max': 600},
-    'blast_furnace_slag': {'min': 0, 'max': 450},
-    'fly_ash': {'min': 0, 'max': 600},
-    'water': {'min': 100, 'max': 250},
-    'superplasticizer': {'min': 0, 'max': 30},
-    'coarse_aggregate': {'min': 600, 'max': 1500},
-    'fine_aggregate': {'min': 500, 'max': 1200},
-    'age': {'min': 1, 'max': 365}
-}
+# Inputs
+col1, col2 = st.columns(2)
 
-@app.route('/')
-def home():
-    """API home page"""
-    return jsonify({
-        'message': '🏗️ Concrete Strength Predictor API',
-        'status': 'online',
-        'model_version': 'v1.0',
-        'endpoints': {
-            '/predict': 'POST - Predict concrete strength',
-            '/health': 'GET - Check API health',
-            '/metadata': 'GET - View model info',
-            '/': 'GET - This page'
-        }
-    })
+with col1:
+    st.subheader("📦 Primary Materials")
+    cement = st.slider("Cement (kg/m³)", 100, 600, 350)
+    ggbfs = st.slider("GGBFS (kg/m³)", 0, 450, 0)
+    fly_ash = st.slider("Fly Ash (kg/m³)", 0, 600, 0)
+    water = st.slider("Water (kg/m³)", 100, 250, 175)
 
-@app.route('/health')
-def health():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': True,
-        'timestamp': datetime.utcnow().isoformat() + 'Z'
-    })
+with col2:
+    st.subheader("🧪 Additives & Age")
+    superplasticizer = st.slider("Superplasticizer (kg/m³)", 0.0, 30.0, 0.0, 0.5)
+    coarse_aggregate = st.slider("Coarse Aggregate (kg/m³)", 600, 1500, 1100)
+    fine_aggregate = st.slider("Fine Aggregate (kg/m³)", 500, 1200, 700)
+    age = st.slider("Curing Age (days)", 1, 365, 28)
 
-@app.route('/metadata')
-def get_metadata():
-    """Get model performance metrics"""
-    return jsonify(metadata)
+# Predict button
+if st.button("🔮 Predict Strength", type="primary"):
+    features = np.array([[cement, ggbfs, fly_ash, water, superplasticizer, 
+                          coarse_aggregate, fine_aggregate, age]])
+    
+    features_scaled = scaler.transform(features)
+    prediction = model.predict(features_scaled)[0]
+    
+    st.divider()
+    st.subheader("📊 Prediction Results")
+    
+    col_r1, col_r2, col_r3 = st.columns(3)
+    
+    with col_r1:
+        st.metric("💪 Compressive Strength", f"{prediction:.2f} MPa")
+    
+    if prediction >= 60:
+        grade = "Very High Strength 🟢"
+    elif prediction >= 40:
+        grade = "High Strength 🟢"
+    elif prediction >= 25:
+        grade = "Medium Strength 🟡"
+    else:
+        grade = "Low Strength 🔴"
+    
+    with col_r2:
+        st.metric("📋 Grade", grade)
+    
+    wc_ratio = water / cement
+    with col_r3:
+        st.metric("💧 Water/Cement Ratio", f"{wc_ratio:.3f}")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Predict concrete compressive strength"""
-    try:
-        # Get JSON data
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        # Check for missing features
-        missing = [f for f in FEATURE_COLS if f not in data]
-        if missing:
-            return jsonify({
-                'error': f'Missing features: {missing}',
-                'status': 'error'
-            }), 400
-        
-        # Extract and validate values
-        input_values = {}
-        for feature in FEATURE_COLS:
-            try:
-                value = float(data[feature])
-            except (TypeError, ValueError):
-                return jsonify({
-                    'error': f'Invalid value for {feature}: must be a number',
-                    'status': 'error'
-                }), 400
-            
-            # Domain validation
-            rule = VALIDATION_RULES[feature]
-            if value < rule['min'] or value > rule['max']:
-                return jsonify({
-                    'error': f'{feature} must be between {rule["min"]} and {rule["max"]} (got {value})',
-                    'status': 'error'
-                }), 400
-            
-            input_values[feature] = value
-        
-        # Check water/cement ratio
-        w_c_ratio = input_values['water'] / input_values['cement']
-        if w_c_ratio < 0.25:
-            return jsonify({
-                'error': f'Water/Cement ratio ({w_c_ratio:.3f}) is too low. Minimum is 0.25.',
-                'status': 'error'
-            }), 400
-        if w_c_ratio > 0.8:
-            return jsonify({
-                'error': f'Water/Cement ratio ({w_c_ratio:.3f}) is too high. Maximum is 0.8.',
-                'status': 'error'
-            }), 400
-        
-        # Prepare input
-        input_df = pd.DataFrame([input_values])[FEATURE_COLS]
-        input_scaled = scaler.transform(input_df)
-        
-        # Make prediction
-        prediction = model.predict(input_scaled)[0]
-        prediction = max(prediction, 0)  # Strength can't be negative
-        prediction = min(prediction, 150)  # Cap at realistic max
-        
-        # Return result
-        return jsonify({
-            'strength': round(float(prediction), 2),
-            'status': 'success',
-            'model_version': 'v1.0',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'input': {k: round(v, 2) for k, v in input_values.items()},
-            'w_c_ratio': round(w_c_ratio, 3)
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': f'Server error: {str(e)}',
-            'status': 'error'
-        }), 500
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    print(f"\n🚀 Starting server at http://127.0.0.1:{port}")
-    print("   Press CTRL+C to stop the server")
-    print("=" * 60)
-    app.run(debug=True, host='0.0.0.0', port=port)
+st.divider()
+st.caption("Built with ❤️ using Random Forest Machine Learning Model")
